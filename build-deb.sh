@@ -1,5 +1,5 @@
 #!/bin/sh
-set -x
+set -xe
 
 PKG_NAME=bitdefender-scanner
 ZIP_FILE="$(dirname "$0")/$PKG_NAME.deb.tgz"
@@ -36,7 +36,7 @@ echo 'activate-noawait ldconfig' > "$PKG_DIR/DEBIAN/triggers"
 mv "$PKG_DIR/DEBIAN" /tmp/
 PKG_SIZE=`du -sk "$PKG_DIR" | sed 's/[^0-9].*//'`
 mv /tmp/DEBIAN "$PKG_DIR/"
-sed -i -e 's/^Depends:.*/&\nRecommends: procps, libc-bin/' -e "s/^\(Installed-Size:\).*/\1 $PKG_SIZE/" "$PKG_DIR/DEBIAN/control"
+sed -i -e 's/^Depends:.*/&\nRecommends: libc-bin, procps/' -e "s/^\(Installed-Size:\).*/\1 $PKG_SIZE/" "$PKG_DIR/DEBIAN/control"
 
 echo "/etc/$BASE_NAME/bdscan.conf
 $INST_DIR/etc/bdscan.conf" > "$PKG_DIR/DEBIAN/conffiles"
@@ -83,7 +83,7 @@ purge|remove)
     rm -rf '$INST_DIR/var' '/usr/share/doc/$PKG_NAME' || true
 
     # remove the bitdefender user and group (if possible)
-    if [ ! -d /opt/BitDefender* ]; then
+    if [ -z \"\$(ls -1dp /opt/BitDefender* 2>/dev/null | grep -v '$INST_DIR/')\" ]; then
         userdel bitdefender 2>/dev/null || true
         groupdel bitdefender 2>/dev/null || true
     fi

@@ -1,5 +1,5 @@
 #!/bin/sh
-set -x
+set -xe
 
 PKG_NAME=bitdefender-scanner
 DEB_FILE="$(dirname "$0")/$PKG_NAME.deb"

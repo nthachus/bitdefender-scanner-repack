@@ -8,7 +8,7 @@ services:
       - ".:/root/builder"
     working_dir: /root
     command: /bin/ash -c "
-      ./builder/download.sh ${BDSCAN_ARCH} &&
+      ./builder/download.sh ${BDSCAN_ARCH:-} &&
       ./builder/build-deb.sh &&
       ./builder/build-apk.sh &&
       tail -f /dev/null

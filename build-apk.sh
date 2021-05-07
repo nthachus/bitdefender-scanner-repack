@@ -1,5 +1,5 @@
 #!/bin/sh
-set -x
+set -xe
 
 PKG_NAME=bitdefender-scanner
 ZIP_FILE="$(dirname "$0")/$PKG_NAME.deb.tgz"
@@ -48,17 +48,13 @@ $(grep '^Maintainer:' /tmp/DEBIAN/control | sed 's/^Maintainer:/maintainer =/')
 license = BitDefender
 builddate = $(date +%s)
 size = $((PKG_SIZE * 1024))
-depend = libc6-compat
+#depend = libc6-compat>1.1.16
 depend = libgcc>4.1.1
 depend = libstdc++>4.1.1
 depend = /bin/sh
 # automatically detected:
 provides = cmd:bdscan
 depend = so:libc.musl-$ARCH.so.1
-#depend = so:libdl.so.2
-depend = so:libc.so.6
-depend = so:libm.so.6
-depend = so:libpthread.so.0
 depend = so:libgcc_s.so.1
 depend = so:libstdc++.so.6
 #depend = so:libnt.so" > "$PKG_DIR/.PKGINFO"
@@ -68,10 +64,10 @@ echo '#!/bin/sh' > "$PKG_DIR/.post-install"
 echo "set -x
 
 # library path
-if [ ! -e /etc/ld-musl-$ARCH.path ]; then
-    echo '/lib:/usr/local/lib:/usr/lib' > /etc/ld-musl-$ARCH.path
-fi
-sed -i 's,^[^#].*:.*,&:$INST_DIR/var/lib,' /etc/ld-musl-$ARCH.path
+#if [ ! -e /etc/ld-musl-$ARCH.path ]; then
+#    echo '/lib:/usr/local/lib:/usr/lib' > /etc/ld-musl-$ARCH.path
+#fi
+#echo '$INST_DIR/var/lib' >> /etc/ld-musl-$ARCH.path
 
 # create the user/group bitdefender, if needed
 addgroup -S bitdefender 2>/dev/null || true
@@ -87,13 +83,12 @@ echo '#!/bin/sh' > "$PKG_DIR/.post-deinstall"
 echo "set -x
 
 # library path
-if [ -e /etc/ld-musl-$ARCH.path ]; then
-    sed -i 's,:$INST_DIR/var/lib,,' /etc/ld-musl-$ARCH.path
-
-    if [ \"\$(cat /etc/ld-musl-$ARCH.path)\" = '/lib:/usr/local/lib:/usr/lib' ]; then
-        rm -rf /etc/ld-musl-$ARCH.path
-    fi
-fi
+#if [ -e /etc/ld-musl-$ARCH.path ]; then
+#    sed -i ',$INST_DIR/var/lib,d' /etc/ld-musl-$ARCH.path
+#    if [ \"\$(cat /etc/ld-musl-$ARCH.path)\" = '/lib:/usr/local/lib:/usr/lib' ]; then
+#        rm -rf /etc/ld-musl-$ARCH.path
+#    fi
+#fi
 
 # cleanup
 rm -rf '$INST_DIR/var' '/usr/share/doc/$PKG_NAME' || true

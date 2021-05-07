@@ -12,6 +12,10 @@ Build packages for `x86` architecture:
 
     $ BDSCAN_ARCH=i386 docker-compose up -d
 
+*Setting and using variable within same command line in `Windows`:*
+
+    $ cmd /C "set BDSCAN_ARCH=i386&& docker-compose up -d"
+
 ### Notes
 
 - View the build logs: `docker-compose logs`
