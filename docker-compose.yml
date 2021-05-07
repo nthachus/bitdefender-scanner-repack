@@ -1,0 +1,16 @@
+version: "3"
+services:
+  repack:
+    build: .
+    image: "bdscan-repack:alpine"
+    container_name: bdscan-repack
+    volumes:
+      - ".:/root/builder"
+    working_dir: /root
+    command: /bin/ash -c "
+      ./builder/download.sh ${BDSCAN_ARCH} &&
+      ./builder/build-deb.sh &&
+      ./builder/build-apk.sh &&
+      tail -f /dev/null
+      "
+    stop_signal: SIGKILL
