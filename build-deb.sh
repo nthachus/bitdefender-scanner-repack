@@ -17,6 +17,7 @@ ARCH=`grep '^Architecture:' "$PKG_DIR/DEBIAN/control" | sed 's/^Architecture:[ \
 OUT_FILE="${ZIP_FILE%.*.*}_${PKG_VER}_$ARCH.repack.deb"
 
 if [ -f "$OUT_FILE" ]; then
+    rm -rf "$PKG_DIR"
     exit 0
 fi
 
@@ -50,6 +51,7 @@ find "$PKG_DIR" -not -type d -not -path '*/etc/bdscan.conf' -not -path '*/DEBIAN
 
 echo '#!/bin/sh' > "$PKG_DIR/DEBIAN/postinst"
 echo "set -e
+DIR='$INST_DIR'
 
 case \$1 in
 configure)
@@ -64,10 +66,10 @@ configure)
 
     # create the user/group bitdefender, if needed
     groupadd --system bitdefender 2>/dev/null || true
-    useradd --system -d '$INST_DIR' --no-create-home --shell \$BD_SHELL -g bitdefender -c BitDefender bitdefender 2>/dev/null || true
+    useradd --system -d \"\$DIR\" --no-create-home --shell \$BD_SHELL -g bitdefender -c BitDefender bitdefender 2>/dev/null || true
 
     # adjust permissions
-    if ! chown -Rh bitdefender:bitdefender '$INST_DIR' 2>/dev/null ; then
+    if ! chown -Rh bitdefender:bitdefender \"\$DIR\" 2>/dev/null ; then
         echo 'Failed to create the necessary user and group' >&2
         exit 1
     fi
@@ -76,14 +78,16 @@ esac" >> "$PKG_DIR/DEBIAN/postinst"
 
 echo '#!/bin/sh' > "$PKG_DIR/DEBIAN/postrm"
 echo "set -e
+DIR='$INST_DIR'
 
 case \$1 in
 purge|remove)
     # cleanup
-    rm -rf '$INST_DIR/var' '/usr/share/doc/$PKG_NAME' || true
+    rm -rf \"\$DIR/var\" '/usr/share/doc/$PKG_NAME' || true
+    rmdir --ignore-fail-on-non-empty \"\$DIR\" 2>/dev/null || true
 
     # remove the bitdefender user and group (if possible)
-    if [ -z \"\$(ls -1dp /opt/BitDefender* 2>/dev/null | grep -v '$INST_DIR/')\" ]; then
+    if [ -z \"\$(ls -1dp /opt/BitDefender* 2>/dev/null | grep -v \"\$DIR/\")\" ]; then
         userdel bitdefender 2>/dev/null || true
         groupdel bitdefender 2>/dev/null || true
     fi
@@ -93,7 +97,7 @@ upgrade)
     # this is done for compatibility reasons with older packages
     for f in man manpath; do
         if [ -f /etc/\$f.config ]; then
-            sed -i ',$INST_DIR/share/man,d' /etc/\$f.config
+            sed -i \",\$DIR/share/man,d\" /etc/\$f.config
         fi
     done
 ;;

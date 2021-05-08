@@ -14,3 +14,37 @@ services:
       tail -f /dev/null
       "
     stop_signal: SIGKILL
+
+  verify-deb:
+    image: "debian:stretch-slim"
+    container_name: bdscan-verify-deb
+    volumes:
+      - ".:/mnt/builder"
+    working_dir: /mnt/builder
+    environment:
+      - LANG=C.UTF-8
+    depends_on:
+      - repack
+    command: /bin/bash -c "
+      while [ ! -f ./*.repack.deb ]; do sleep 1; done &&
+      ./verify-deb.sh &&
+      tail -f /dev/null
+      "
+    stop_signal: SIGKILL
+
+  verify-apk:
+    image: "alpine:3.11"
+    container_name: bdscan-verify-apk
+    volumes:
+      - ".:/mnt/builder"
+    working_dir: /mnt/builder
+    environment:
+      - LANG=C.UTF-8
+    depends_on:
+      - repack
+    command: /bin/ash -c "
+      while [ ! -f ./*.repack.apk ]; do sleep 1; done &&
+      ./verify-apk.sh &&
+      tail -f /dev/null
+      "
+    stop_signal: SIGKILL

@@ -16,6 +16,7 @@ PKG_VER=`grep '^Version:' "$PKG_DIR/DEBIAN/control" | sed 's/^Version:[ \t]*//'`
 OUT_FILE="${ZIP_FILE%.*.*}-$PKG_VER.repack.apk"
 
 if [ -f "$OUT_FILE" ]; then
+    rm -rf "$PKG_DIR"
     exit 0
 fi
 
@@ -32,7 +33,7 @@ if grep -q '^Architecture:.*64' "$PKG_DIR/DEBIAN/control"; then
 else
     ARCH=x86
 fi
-#ln -sf /lib/libc.musl-$ARCH.so.1 "$BASE_DIR/var/lib/libdl.so.2"
+#echo "/lib:/usr/local/lib:/usr/lib:$INST_DIR/var/lib" > "$BASE_DIR/etc/ld-musl-$ARCH.path"
 
 # APK files
 mv "$PKG_DIR/DEBIAN" /tmp/
@@ -61,46 +62,35 @@ depend = so:libstdc++.so.6
 
 
 echo '#!/bin/sh' > "$PKG_DIR/.post-install"
-echo "set -x
-
-# library path
-#if [ ! -e /etc/ld-musl-$ARCH.path ]; then
-#    echo '/lib:/usr/local/lib:/usr/lib' > /etc/ld-musl-$ARCH.path
-#fi
-#echo '$INST_DIR/var/lib' >> /etc/ld-musl-$ARCH.path
+echo "set -xe
+DIR='$INST_DIR'
 
 # create the user/group bitdefender, if needed
 addgroup -S bitdefender 2>/dev/null || true
-adduser -S -h '$INST_DIR' -H -G bitdefender -g BitDefender bitdefender 2>/dev/null || true
+adduser -S -h \"\$DIR\" -H -G bitdefender -g BitDefender bitdefender 2>/dev/null || true
 
 # adjust permissions
-if ! chown -Rh bitdefender:bitdefender '$INST_DIR' 2>/dev/null ; then
+if ! chown -Rh bitdefender:bitdefender \"\$DIR\" 2>/dev/null ; then
     echo 'Failed to create the necessary user and group' >&2
     exit 1
 fi" >> "$PKG_DIR/.post-install"
 
 echo '#!/bin/sh' > "$PKG_DIR/.post-deinstall"
-echo "set -x
-
-# library path
-#if [ -e /etc/ld-musl-$ARCH.path ]; then
-#    sed -i ',$INST_DIR/var/lib,d' /etc/ld-musl-$ARCH.path
-#    if [ \"\$(cat /etc/ld-musl-$ARCH.path)\" = '/lib:/usr/local/lib:/usr/lib' ]; then
-#        rm -rf /etc/ld-musl-$ARCH.path
-#    fi
-#fi
+echo "set -xe
+DIR='$INST_DIR'
 
 # cleanup
-rm -rf '$INST_DIR/var' '/usr/share/doc/$PKG_NAME' || true
+rm -rf \"\$DIR/var\" '/usr/share/doc/$PKG_NAME' || true
+rmdir --ignore-fail-on-non-empty \"\$DIR\" 2>/dev/null || true
 
 # remove the bitdefender user and group (if possible)
-if [ ! -d /opt/BitDefender* ]; then
+if [ -z \"\$(ls -1dp /opt/BitDefender* 2>/dev/null | grep -v \"\$DIR/\")\" ]; then
     deluser bitdefender 2>/dev/null || true
     delgroup bitdefender 2>/dev/null || true
 fi" >> "$PKG_DIR/.post-deinstall"
 
 echo '#!/bin/sh' > "$PKG_DIR/.pre-deinstall"
-echo "set -x
+echo "set -xe
 
 # terminate all bdscan instances
 pkill -x bdscan 2>/dev/null || true
