@@ -26,7 +26,6 @@ services:
     depends_on:
       - repack
     command: /bin/bash -c "
-      while [ ! -f ./*.repack.deb ]; do sleep 1; done &&
       ./verify-deb.sh &&
       tail -f /dev/null
       "
@@ -43,7 +42,6 @@ services:
     depends_on:
       - repack
     command: /bin/ash -c "
-      while [ ! -f ./*.repack.apk ]; do sleep 1; done &&
       ./verify-apk.sh &&
       tail -f /dev/null
       "

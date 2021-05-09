@@ -25,7 +25,7 @@ INST_DIR="/opt/$BASE_NAME"
 BASE_DIR="$PKG_DIR$INST_DIR"
 
 #
-mkdir -p "$PKG_DIR/etc/periodic/daily"
+mkdir -p "$PKG_DIR/etc/periodic/daily" "$PKG_DIR/usr/local/lib"
 ln -sf "$INST_DIR/share/contrib/update/bdscan-update" "$PKG_DIR/etc/periodic/daily/"
 
 if grep -q '^Architecture:.*64' "$PKG_DIR/DEBIAN/control"; then
@@ -33,7 +33,7 @@ if grep -q '^Architecture:.*64' "$PKG_DIR/DEBIAN/control"; then
 else
     ARCH=x86
 fi
-#echo "/lib:/usr/local/lib:/usr/lib:$INST_DIR/var/lib" > "$BASE_DIR/etc/ld-musl-$ARCH.path"
+ln -sf "$INST_DIR/var/lib/scan" "$PKG_DIR/usr/local/lib/bdscan"
 
 # APK files
 mv "$PKG_DIR/DEBIAN" /tmp/
@@ -49,7 +49,7 @@ $(grep '^Maintainer:' /tmp/DEBIAN/control | sed 's/^Maintainer:/maintainer =/')
 license = BitDefender
 builddate = $(date +%s)
 size = $((PKG_SIZE * 1024))
-#depend = libc6-compat>1.1.16
+depend = gcompat>0.4.0
 depend = libgcc>4.1.1
 depend = libstdc++>4.1.1
 depend = /bin/sh
@@ -61,22 +61,25 @@ depend = so:libstdc++.so.6
 #depend = so:libnt.so" > "$PKG_DIR/.PKGINFO"
 
 
-echo '#!/bin/sh' > "$PKG_DIR/.post-install"
-echo "set -xe
+echo '#!/bin/sh' > "$PKG_DIR/.pre-install"
+echo "set -e
 DIR='$INST_DIR'
 
 # create the user/group bitdefender, if needed
 addgroup -S bitdefender 2>/dev/null || true
-adduser -S -h \"\$DIR\" -H -G bitdefender -g BitDefender bitdefender 2>/dev/null || true
+adduser -S -h \"\$DIR\" -H -G bitdefender -g BitDefender bitdefender 2>/dev/null || true" >> "$PKG_DIR/.pre-install"
 
-# adjust permissions
-if ! chown -Rh bitdefender:bitdefender \"\$DIR\" 2>/dev/null ; then
-    echo 'Failed to create the necessary user and group' >&2
-    exit 1
-fi" >> "$PKG_DIR/.post-install"
+if [ $ARCH = x86_64 ]; then
+    echo "
+# library compatibility
+if [ ! -e /lib64/ld-linux-x86-64.so.2 ]; then
+    mkdir -p /lib64
+    ln -sf /lib/ld-linux-x86-64.so.2 /lib64/ld-linux-x86-64.so.2
+fi" >> "$PKG_DIR/.pre-install"
+fi
 
 echo '#!/bin/sh' > "$PKG_DIR/.post-deinstall"
-echo "set -xe
+echo "set -e
 DIR='$INST_DIR'
 
 # cleanup
@@ -90,12 +93,12 @@ if [ -z \"\$(ls -1dp /opt/BitDefender* 2>/dev/null | grep -v \"\$DIR/\")\" ]; th
 fi" >> "$PKG_DIR/.post-deinstall"
 
 echo '#!/bin/sh' > "$PKG_DIR/.pre-deinstall"
-echo "set -xe
+echo "set -e
 
 # terminate all bdscan instances
-pkill -x bdscan 2>/dev/null || true
+pkill -f '/bin/bdscan' 2>/dev/null || true
 sleep 2
-pkill -x -9 bdscan 2>/dev/null || true" >> "$PKG_DIR/.pre-deinstall"
+pkill -f -9 '/bin/bdscan' 2>/dev/null || true" >> "$PKG_DIR/.pre-deinstall"
 
 ln -sf .pre-deinstall "$PKG_DIR/.pre-upgrade"
 ( cd "$PKG_DIR" && chmod +x .pre-* .post-* )

@@ -22,6 +22,9 @@ fi
 
 PKG_DIR="/tmp/$PKG_NAME"
 dpkg-deb -R "$DEB_FILE" "$PKG_DIR/"
+if [ ! -e "$DEB_FILE.txt" ]; then
+    find "$PKG_DIR" -exec ls -ldp --full-time "{}" \; | sed -e 's,^\([^ ]*\) *[0-9]* *\([^ ]*\) *\([^ ]*\),\1 \2/\3,' -e "s, *+0000 *$PKG_DIR/\(.*\), ./\1," -e 's/^\([^ ]* [^ ]* *\)4096 /\1   0 /' | sort -k6 > "$DEB_FILE.txt"
+fi
 
 BASE_NAME=`ls -1 "$PKG_DIR/opt/" | head -1`
 INST_DIR="/opt/$BASE_NAME"
@@ -57,7 +60,8 @@ ln -sf "..$INST_DIR/etc" "$PKG_DIR/etc/$BASE_NAME"
 ln -sf "$INST_DIR/bin/bdscan" "$PKG_DIR/usr/bin/"
 
 # adjust permissions
-chown -Rh root:root "$PKG_DIR/"
+chown -Rh root:root "$PKG_DIR"
+chown -Rh bitdefender:bitdefender "$BASE_DIR"
 
 # find "$PKG_DIR" -not -type d -exec stat -c '%Y:%n' "{}" \; | sort -nr | head -1 | cut -d: -f2-
 NEWEST_FILE="$BASE_DIR/var/bdscan.inf"
