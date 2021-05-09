@@ -1,7 +1,9 @@
 version: "3"
 services:
   repack:
-    build: .
+    build:
+      context: .
+      target: alpine_repack
     image: "bdscan-repack:alpine"
     container_name: bdscan-repack
     volumes:
@@ -16,32 +18,36 @@ services:
     stop_signal: SIGKILL
 
   verify-deb:
-    image: "debian:stretch-slim"
+    build:
+      context: .
+      target: "${BDSCAN_ARCH:-}debian_verify"
+    image: "bdscan-verify-deb:${BDSCAN_ARCH:-}stretch"
     container_name: bdscan-verify-deb
     volumes:
       - ".:/mnt/builder"
     working_dir: /mnt/builder
-    environment:
-      - LANG=C.UTF-8
     depends_on:
       - repack
     command: /bin/bash -c "
+      while [ ! -f ./*-repack_*.deb ]; do sleep 1; done &&
       ./verify-deb.sh &&
       tail -f /dev/null
       "
     stop_signal: SIGKILL
 
   verify-apk:
-    image: "alpine:3.11"
+    build:
+      context: .
+      target: "${BDSCAN_ARCH:-}alpine_verify"
+    image: "bdscan-verify-apk:${BDSCAN_ARCH:-}alpine"
     container_name: bdscan-verify-apk
     volumes:
       - ".:/mnt/builder"
     working_dir: /mnt/builder
-    environment:
-      - LANG=C.UTF-8
     depends_on:
       - repack
     command: /bin/ash -c "
+      while [ ! -f ./*-repack.*.apk ]; do sleep 1; done &&
       ./verify-apk.sh &&
       tail -f /dev/null
       "

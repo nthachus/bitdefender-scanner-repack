@@ -14,7 +14,7 @@ tar -xzf "$ZIP_FILE" -C "$PKG_DIR/"
 
 PKG_VER=`grep '^Version:' "$PKG_DIR/DEBIAN/control" | sed 's/^Version:[ \t]*//'`
 ARCH=`grep '^Architecture:' "$PKG_DIR/DEBIAN/control" | sed 's/^Architecture:[ \t]*//'`
-OUT_FILE="${ZIP_FILE%.*.*}_${PKG_VER}_$ARCH.repack.deb"
+OUT_FILE="${ZIP_FILE%.*.*}_${PKG_VER}-repack_$ARCH.deb"
 
 if [ -f "$OUT_FILE" ]; then
     rm -rf "$PKG_DIR"
@@ -37,7 +37,9 @@ echo 'activate-noawait ldconfig' > "$PKG_DIR/DEBIAN/triggers"
 mv "$PKG_DIR/DEBIAN" /tmp/
 PKG_SIZE=`du -sk "$PKG_DIR" | sed 's/[^0-9].*//'`
 mv /tmp/DEBIAN "$PKG_DIR/"
-sed -i -e 's/^Depends:.*/&\nRecommends: libc-bin, procps/' -e "s/^\(Installed-Size:\).*/\1 $PKG_SIZE/" "$PKG_DIR/DEBIAN/control"
+sed -i -e 's/^Version:.*/&-repack/' \
+    -e 's/^Depends:.*/&\nRecommends: libc-bin, procps/' \
+    -e "s/^\(Installed-Size:\).*/\1 $PKG_SIZE/" "$PKG_DIR/DEBIAN/control"
 
 echo "/etc/$BASE_NAME/bdscan.conf
 $INST_DIR/etc/bdscan.conf" > "$PKG_DIR/DEBIAN/conffiles"

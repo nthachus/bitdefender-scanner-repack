@@ -12,8 +12,13 @@ PKG_DIR="/tmp/$PKG_NAME"
 mkdir "$PKG_DIR"
 tar -xzf "$ZIP_FILE" -C "$PKG_DIR/"
 
+if grep -q '^Architecture:.*64' "$PKG_DIR/DEBIAN/control"; then
+    ARCH=x86_64
+else
+    ARCH=x86
+fi
 PKG_VER=`grep '^Version:' "$PKG_DIR/DEBIAN/control" | sed 's/^Version:[ \t]*//'`
-OUT_FILE="${ZIP_FILE%.*.*}-$PKG_VER.repack.apk"
+OUT_FILE="${ZIP_FILE%.*.*}-${PKG_VER}-repack.$ARCH.apk"
 
 if [ -f "$OUT_FILE" ]; then
     rm -rf "$PKG_DIR"
@@ -27,12 +32,6 @@ BASE_DIR="$PKG_DIR$INST_DIR"
 #
 mkdir -p "$PKG_DIR/etc/periodic/daily" "$PKG_DIR/usr/local/lib"
 ln -sf "$INST_DIR/share/contrib/update/bdscan-update" "$PKG_DIR/etc/periodic/daily/"
-
-if grep -q '^Architecture:.*64' "$PKG_DIR/DEBIAN/control"; then
-    ARCH=x86_64
-else
-    ARCH=x86
-fi
 ln -sf "$INST_DIR/var/lib/scan" "$PKG_DIR/usr/local/lib/bdscan"
 
 # APK files
@@ -40,7 +39,7 @@ mv "$PKG_DIR/DEBIAN" /tmp/
 PKG_SIZE=`du -sk "$PKG_DIR" | sed 's/[^0-9].*//'`
 
 echo "pkgname = $PKG_NAME
-pkgver = $PKG_VER
+pkgver = ${PKG_VER}-repack
 $(grep '^Description:' /tmp/DEBIAN/control | sed 's/^Description:/pkgdesc =/')
 $(grep '^ \?Homepage:' /tmp/DEBIAN/control | sed 's/^ \?Homepage:/url =/')
 arch = $ARCH
@@ -67,14 +66,18 @@ DIR='$INST_DIR'
 
 # create the user/group bitdefender, if needed
 addgroup -S bitdefender 2>/dev/null || true
-adduser -S -h \"\$DIR\" -H -G bitdefender -g BitDefender bitdefender 2>/dev/null || true" >> "$PKG_DIR/.pre-install"
+adduser -S -h \"\$DIR\" -H -G bitdefender -g BitDefender bitdefender 2>/dev/null || true
+
+# library compatibility" >> "$PKG_DIR/.pre-install"
 
 if [ $ARCH = x86_64 ]; then
-    echo "
-# library compatibility
-if [ ! -e /lib64/ld-linux-x86-64.so.2 ]; then
+    echo "if [ ! -e /lib64/ld-linux-x86-64.so.2 ]; then
     mkdir -p /lib64
     ln -sf /lib/ld-linux-x86-64.so.2 /lib64/ld-linux-x86-64.so.2
+fi" >> "$PKG_DIR/.pre-install"
+else
+    echo "if [ ! -e /lib/ld-musl-x86.so.1 ]; then
+    ln -sf ld-musl-i386.so.1 /lib/ld-musl-x86.so.1
 fi" >> "$PKG_DIR/.pre-install"
 fi
 
