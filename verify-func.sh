@@ -39,15 +39,16 @@ verify_pkg_removed()
 
 verify_scanner_info()
 {
-    if [ -f ./cumulative*.zip ]; then
-        unzip -oq ./cumulative*.zip -d "$DIR/var/lib/scan/"
-        chown -Rh $UID:$UID "$DIR/var/lib/scan/"
-
-        bdscan --info > "$LOG"
-        grep '^Engine signatures: [0-9]' "$LOG"
-
-        bdscan --action=ignore --no-list --log "$0"
-        grep "/$(basename "$0")[[:blank:]]*ok\$" "$LOG"
-        grep '^Infected files: 0$' "$LOG"
+    if [ ! -f ./cumulative*.tgz ]; then
+        return 0
     fi
+    tar -xzf ./cumulative*.tgz -C "$DIR/var/lib/scan/" --overwrite
+    chown -Rh $UID:$UID "$DIR/var/lib/scan/"
+
+    bdscan --info > "$LOG"
+    grep '^Engine signatures: [0-9]' "$LOG"
+
+    bdscan --action=ignore --no-list --log "$0"
+    grep "/$(basename "$0")[[:blank:]]*ok\$" "$LOG"
+    grep '^Infected files: 0$' "$LOG"
 }

@@ -13,6 +13,7 @@ services:
       ./builder/download.sh ${BDSCAN_ARCH:-} &&
       ./builder/build-deb.sh &&
       ./builder/build-apk.sh &&
+      ./builder/download-cum.sh ${BDSCAN_ARCH:-} &&
       tail -f /dev/null
       "
     stop_signal: SIGKILL
