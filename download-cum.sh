@@ -26,7 +26,7 @@ mkdir -p "$WORK_DIR"
 unzip -q "$ZIP_FILE" -d "$WORK_DIR/"
 
 # @see threatscanner from bitdefender_ts_23
-( cd "$WORK_DIR" && tar -czf "$OUT_FILE" --exclude='*.linux-*-wg' *.dll *.linux-* \
+( cd "$WORK_DIR" && tar -czf "$OUT_FILE" --exclude '*.linux-*-wg' *.dll *.linux-* \
     */aspy*.cvd */auto.* */avxdisk.* */ceva*.* */disp.* */gvmscripts.* */lib.* */orice.* */tkn*.cvd */*.txt */variant.* */xlmrd.* )
 
 tar -tzvf "$OUT_FILE" > "$OUT_FILE.txt"

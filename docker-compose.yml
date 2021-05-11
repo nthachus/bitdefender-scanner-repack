@@ -13,6 +13,7 @@ services:
       ./builder/download.sh ${BDSCAN_ARCH:-} &&
       ./builder/build-deb.sh ${BDSCAN_ARCH:-} &&
       ./builder/build-apk.sh ${BDSCAN_ARCH:-} &&
+      ./builder/build-rpm.sh ${BDSCAN_ARCH:-} &&
       ./builder/download-cum.sh ${BDSCAN_ARCH:-} &&
       tail -f /dev/null
       "

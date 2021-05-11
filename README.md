@@ -1,6 +1,6 @@
 # BitDefender scanner repack
 
-Build `deb` and `apk` packages for BitDefender command line virus scanner.
+Build `deb`, `rpm` and `apk` packages for BitDefender command line virus scanner.
 
 ## Build with [Docker](https://www.docker.com)
 

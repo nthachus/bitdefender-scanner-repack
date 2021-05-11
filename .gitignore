@@ -1,5 +1,6 @@
 *.tgz
 *.zip
 *.deb
+*.rpm
 *.apk
 *.txt
