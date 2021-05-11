@@ -2,7 +2,8 @@
 set -xe
 
 PKG_NAME=bitdefender-scanner
-DEB_FILE="$(dirname "$0")/$PKG_NAME.deb"
+ARCH=${1:-amd64}
+DEB_FILE="$(dirname "$0")/${PKG_NAME}_$ARCH.deb"
 OUT_FILE="$DEB_FILE.tgz"
 
 if [ -f "$OUT_FILE" ]; then
@@ -10,9 +11,11 @@ if [ -f "$OUT_FILE" ]; then
 fi
 
 if [ ! -f "$DEB_FILE" ]; then
+    # http://download.bitdefender.com/repos/rpm/bitdefender
     REPO_URL='http://download.bitdefender.com/repos/deb'
-    ARCH=${1:-amd64}
 
+    # if echo "$ARCH" | grep -q 64; then ARCH=x86_64; else ARCH=i586; fi
+    # curl -s "$REPO_URL/repodata/primary.xml.gz" | gunzip | sed 's/></>\n</g' | grep " href=\"$ARCH/$PKG_NAME-[0-9]"
     FILE_NAME="`curl -s "$REPO_URL/dists/bitdefender/non-free/binary-$ARCH/Packages" | grep ":.*/$PKG_NAME/"`"
 
     curl -Rso "$DEB_FILE" "$REPO_URL/`echo ${FILE_NAME#*:}`"

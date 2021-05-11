@@ -1,7 +1,12 @@
 #!/bin/sh
-. ./verify-func.sh
+SC_DIR="$(dirname "$0")"
+. "$SC_DIR/verify-func.sh" "$@"
 
-apk add --no-cache --allow-untrusted ./*-repack.*.apk
+apk update -q
+if echo "${1:-amd64}" | grep -q 64; then ARCH=64; else ARCH=86; fi
+( set +x && cd "$SC_DIR" && while [ ! -f ./*-repack.*$ARCH.apk ]; do sleep 1; done )
+
+( cd "$SC_DIR" && apk add --no-cache --allow-untrusted ./*-repack.*$ARCH.apk )
 verify_pkg_installed
 
 verify_scanner_info

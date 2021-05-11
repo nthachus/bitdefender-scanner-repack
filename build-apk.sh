@@ -2,7 +2,8 @@
 set -xe
 
 PKG_NAME=bitdefender-scanner
-ZIP_FILE="$(dirname "$0")/$PKG_NAME.deb.tgz"
+ARCH=${1:-amd64}
+ZIP_FILE="$(dirname "$0")/${PKG_NAME}_$ARCH.deb.tgz"
 
 if [ ! -f "$ZIP_FILE" ]; then
     exit 1
@@ -18,7 +19,7 @@ else
     ARCH=x86
 fi
 PKG_VER=`grep '^Version:' "$PKG_DIR/DEBIAN/control" | sed 's/^Version:[ \t]*//'`
-OUT_FILE="${ZIP_FILE%.*.*}-${PKG_VER}-repack.$ARCH.apk"
+OUT_FILE="${ZIP_FILE%_*}-${PKG_VER}-repack.$ARCH.apk"
 
 if [ -f "$OUT_FILE" ]; then
     rm -rf "$PKG_DIR"
@@ -30,6 +31,9 @@ INST_DIR="/opt/$BASE_NAME"
 BASE_DIR="$PKG_DIR$INST_DIR"
 
 #
+( cd "$PKG_DIR/usr/share/doc/$PKG_NAME" \
+    && mv changelog*.gz changelog.gz && rm -rf *.Debian* && sed -i '/^Copyright:/!d' copyright )
+
 mkdir -p "$PKG_DIR/etc/periodic/daily" "$PKG_DIR/usr/local/lib"
 ln -sf "$INST_DIR/share/contrib/update/bdscan-update" "$PKG_DIR/etc/periodic/daily/"
 ln -sf "$INST_DIR/var/lib/scan" "$PKG_DIR/usr/local/lib/bdscan"
@@ -45,7 +49,7 @@ $(grep '^ \?Homepage:' /tmp/DEBIAN/control | sed 's/^ \?Homepage:/url =/')
 arch = $ARCH
 origin = ${PKG_NAME%-*}
 $(grep '^Maintainer:' /tmp/DEBIAN/control | sed 's/^Maintainer:/maintainer =/')
-license = BitDefender
+license = SC. BitDefender SRL.
 builddate = $(date +%s)
 size = $((PKG_SIZE * 1024))
 depend = gcompat>0.2.0

@@ -11,8 +11,8 @@ services:
     working_dir: /root
     command: /bin/ash -c "
       ./builder/download.sh ${BDSCAN_ARCH:-} &&
-      ./builder/build-deb.sh &&
-      ./builder/build-apk.sh &&
+      ./builder/build-deb.sh ${BDSCAN_ARCH:-} &&
+      ./builder/build-apk.sh ${BDSCAN_ARCH:-} &&
       ./builder/download-cum.sh ${BDSCAN_ARCH:-} &&
       tail -f /dev/null
       "
@@ -26,12 +26,11 @@ services:
     container_name: bdscan-verify-deb
     volumes:
       - ".:/mnt/builder"
-    working_dir: /mnt/builder
+    working_dir: /root
     depends_on:
       - repack
     command: /bin/bash -c "
-      while [ ! -f ./*-repack_*.deb ]; do sleep 1; done &&
-      ./verify-deb.sh &&
+      /mnt/builder/verify-deb.sh ${BDSCAN_ARCH:-} &&
       tail -f /dev/null
       "
     stop_signal: SIGKILL
@@ -44,12 +43,11 @@ services:
     container_name: bdscan-verify-apk
     volumes:
       - ".:/mnt/builder"
-    working_dir: /mnt/builder
+    working_dir: /root
     depends_on:
       - repack
     command: /bin/ash -c "
-      while [ ! -f ./*-repack.*.apk ]; do sleep 1; done &&
-      ./verify-apk.sh &&
+      /mnt/builder/verify-apk.sh ${BDSCAN_ARCH:-} &&
       tail -f /dev/null
       "
     stop_signal: SIGKILL

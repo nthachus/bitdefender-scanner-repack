@@ -2,7 +2,8 @@
 set -xe
 
 PKG_NAME=bitdefender-scanner
-ZIP_FILE="$(dirname "$0")/$PKG_NAME.deb.tgz"
+ARCH=${1:-amd64}
+ZIP_FILE="$(dirname "$0")/${PKG_NAME}_$ARCH.deb.tgz"
 
 if [ ! -f "$ZIP_FILE" ]; then
     exit 1
@@ -14,7 +15,7 @@ tar -xzf "$ZIP_FILE" -C "$PKG_DIR/"
 
 PKG_VER=`grep '^Version:' "$PKG_DIR/DEBIAN/control" | sed 's/^Version:[ \t]*//'`
 ARCH=`grep '^Architecture:' "$PKG_DIR/DEBIAN/control" | sed 's/^Architecture:[ \t]*//'`
-OUT_FILE="${ZIP_FILE%.*.*}_${PKG_VER}-repack_$ARCH.deb"
+OUT_FILE="${ZIP_FILE%_*}_${PKG_VER}-repack_$ARCH.deb"
 
 if [ -f "$OUT_FILE" ]; then
     rm -rf "$PKG_DIR"
