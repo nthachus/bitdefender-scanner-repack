@@ -12,6 +12,15 @@ RUN apt-get update -qq \
  && apt-get install -qy --no-install-recommends procps \
  && rm -rf /var/cache/apt/* /var/lib/apt/lists/* /tmp/*
 
+FROM centos:6 AS centos_verify
+ENV LANG en_US.UTF-8
+
+RUN sed 's/^[^0-9]*\| .*$//g' /etc/redhat-release > /etc/yum/vars/releasever \
+ && sed -i -e 's/^mirrorlist=/#&/' -e 's/^#\(baseurl=\)/\1/' -e 's,/mirror\.centos\.org/centos/,/vault.centos.org/,' /etc/yum.repos.d/*.repo
+
+FROM centos:7@sha256:27525fe9e8a84f95baf88459070124628bf83da7216052ea9365fe46e93a102f AS i386centos_verify
+ENV LANG en_US.UTF-8
+
 # 3.8+
 FROM alpine:3.10 AS alpine_verify
 ENV LANG C.UTF-8
@@ -31,7 +40,7 @@ RUN apk update -q \
 FROM alpine AS alpine_repack
 
 RUN apk update -q \
- && apk add --no-cache dpkg abuild unzip rpm \
+ && apk add --no-cache dpkg abuild unzip rpm gnupg \
  && rm -rf /var/cache/apk/* /tmp/*
 
 RUN adduser root abuild \

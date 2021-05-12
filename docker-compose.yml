@@ -52,3 +52,20 @@ services:
       tail -f /dev/null
       "
     stop_signal: SIGKILL
+
+  verify-rpm:
+    build:
+      context: .
+      target: "${BDSCAN_ARCH:-}centos_verify"
+    image: "bdscan-verify-rpm:${BDSCAN_ARCH:-}centos"
+    container_name: bdscan-verify-rpm
+    volumes:
+      - ".:/mnt/builder"
+    working_dir: /root
+    depends_on:
+      - repack
+    command: /bin/bash -c "
+      /mnt/builder/verify-rpm.sh ${BDSCAN_ARCH:-} &&
+      tail -f /dev/null
+      "
+    stop_signal: SIGKILL

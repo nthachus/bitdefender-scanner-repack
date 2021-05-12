@@ -1,17 +1,17 @@
 #!/bin/sh
 set -xe
 
-UID=bitdefender
+OWNER=bitdefender
 DIR='/opt/BitDefender-scanner'
 LOG="$DIR/var/log/bdscan.log"
 
-SC_FILE="$(realpath "$0")"
-SC_DIR="$(dirname "$SC_FILE")"
+SC_DIR="$(cd "`dirname "$0"`"; pwd)"
+SC_FILE="$SC_DIR/$(basename "$0")"
 if echo "${1:-amd64}" | grep -q 64; then BITS=64; else BITS=32; fi
 
 verify_user_added()
 {
-    grep -i $UID /etc/passwd /etc/group
+    grep -i $OWNER /etc/passwd /etc/group
 }
 
 verify_scanner_help()
@@ -22,9 +22,10 @@ verify_scanner_help()
 
 verify_pkg_installed()
 {
-    test -z "`find "$DIR" -not \( -user $UID -group $UID \)`"
-    verify_user_added
+    list_installed_files
+    test -z "`find "$DIR" -not \( -user $OWNER -group $OWNER \)`"
 
+    verify_user_added
     verify_scanner_help
 }
 
@@ -35,9 +36,15 @@ verify_scanner_update()
     grep '\. updated$' "$LOG"
 }
 
+list_installed_files()
+{
+    find / \( -ipath '*bitdefender*' -or -ipath '*bdscan*' \) -not -path "$SC_DIR/*" -exec ls -ldp --full-time "{}" \; \
+        | sort -k9 | sed 's/ +0000 /\t/'
+}
+
 verify_pkg_removed()
 {
-    test -z "`find / \( -iname '*bitdefender*' -or -iname '*bdscan*' \) -not -path "$SC_DIR/*"`"
+    test -z "`list_installed_files`"
     ! verify_user_added
 }
 
@@ -47,12 +54,12 @@ verify_scanner_info()
         return 0
     fi
     tar -xzf "$SC_DIR/cumulative$BITS.tgz" -C "$DIR/var/lib/scan/" --overwrite
-    chown -Rh $UID:$UID "$DIR/var/lib/scan/"
+    chown -Rh $OWNER:$OWNER "$DIR/var/lib/scan/"
 
     bdscan --info > "$LOG"
     grep '^Engine signatures: [0-9]' "$LOG"
 
     bdscan --action=ignore --no-list --log "$SC_FILE"
-    grep "$SC_FILE[[:blank:]]*ok\$" "$LOG"
+    grep "$SC_FILE[[:blank:]]\+ok\$" "$LOG"
     grep '^Infected files: 0$' "$LOG"
 }

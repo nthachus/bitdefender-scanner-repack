@@ -7,7 +7,7 @@ else
     BITS=32
 fi
 
-OUT_FILE="$(dirname "`realpath "$0"`")/cumulative$BITS.tgz"
+OUT_FILE="$(cd "`dirname "$0"`"; pwd)/cumulative$BITS.tgz"
 if [ -f "$OUT_FILE" ]; then
     exit 0
 fi

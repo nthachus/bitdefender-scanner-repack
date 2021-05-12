@@ -28,7 +28,7 @@ verify_user_added
 verify_scanner_update
 
 apt-get remove -y bitdefender-scanner
-find / \( -iname '*bitdefender*' -or -iname '*bdscan*' \) -not -path "$SC_DIR/*" -exec ls -lapR {} \;
+list_installed_files
 ! verify_user_added
 
 rm -rf /var/cache/apt/* /var/lib/apt/lists/* /tmp/*

@@ -43,7 +43,7 @@ ln -sf "$INST_DIR/share/contrib/update/bdscan-update" "$PKG_DIR/etc/cron.daily/"
 
 # SPECS
 mv "$PKG_DIR/DEBIAN" /tmp/
-if [ $ARCH = x86_64 ]; then BITS='(64bit)'; else BITS=''; fi
+PKG_OWNER="`grep '^Maintainer:' /tmp/DEBIAN/control | sed 's/^Maintainer: *//'`"
 
 echo "Name: $PKG_NAME
 Version: ${PKG_VER%-*}
@@ -51,21 +51,37 @@ Release: ${PKG_VER#*-}_repack
 $(grep '^Description:' /tmp/DEBIAN/control | sed 's/^Description/Summary/')
 License: SC. BitDefender SRL.
 $(grep '^ \?Homepage:' /tmp/DEBIAN/control | sed 's/^ \?Homepage/URL/')
-$(grep '^Maintainer:' /tmp/DEBIAN/control | sed 's/^Maintainer/Packager/')
+Packager: $PKG_OWNER
 Group: Applications/System
 #Requires: glibc > 2.3.6, libgcc > 4.1.1, libstdc++ > 4.1.1
 Requires: /sbin/ldconfig
-Provides: bdscan = ${PKG_VER}
-Requires: libc.so.6()$BITS, libc.so.6(GLIBC_2.2.5)$BITS, libc.so.6(GLIBC_2.3.4)$BITS, libc.so.6(GLIBC_2.3)$BITS
-Requires: libdl.so.2()$BITS, libdl.so.2(GLIBC_2.2.5)$BITS, libm.so.6()$BITS, libm.so.6(GLIBC_2.2.5)$BITS, libpthread.so.0()$BITS, libpthread.so.0(GLIBC_2.2.5)$BITS
-Requires: libgcc_s.so.1()$BITS, libgcc_s.so.1(GCC_3.0)$BITS
-Requires: libstdc++.so.6()$BITS, libstdc++.so.6(GLIBCXX_3.4)$BITS, libstdc++.so.6(CXXABI_1.3)$BITS
+Provides: bdscan = $PKG_VER" > "/tmp/$PKG_NAME.spec"
 
+if [ $ARCH = x86_64 ]; then
+    echo "Requires: libc.so.6()(64bit), libc.so.6(GLIBC_2.2.5)(64bit), libc.so.6(GLIBC_2.3)(64bit), libc.so.6(GLIBC_2.3.4)(64bit)
+Requires: libdl.so.2()(64bit), libdl.so.2(GLIBC_2.2.5)(64bit), libm.so.6()(64bit), libm.so.6(GLIBC_2.2.5)(64bit), libpthread.so.0()(64bit), libpthread.so.0(GLIBC_2.2.5)(64bit)
+Requires: libgcc_s.so.1()(64bit), libgcc_s.so.1(GCC_3.0)(64bit)
+Requires: libstdc++.so.6()(64bit), libstdc++.so.6(GLIBCXX_3.4)(64bit), libstdc++.so.6(CXXABI_1.3)(64bit)" >> "/tmp/$PKG_NAME.spec"
+else
+    echo "Requires: libc.so.6, libc.so.6(GLIBC_2.0), libc.so.6(GLIBC_2.1), libc.so.6(GLIBC_2.1.2), libc.so.6(GLIBC_2.2), libc.so.6(GLIBC_2.2.3), libc.so.6(GLIBC_2.3), libc.so.6(GLIBC_2.3.4)
+Requires: libdl.so.2, libdl.so.2(GLIBC_2.0), libdl.so.2(GLIBC_2.1), libm.so.6, libm.so.6(GLIBC_2.1)
+Requires: libpthread.so.0, libpthread.so.0(GLIBC_2.0), libpthread.so.0(GLIBC_2.1), libpthread.so.0(GLIBC_2.2)
+Requires: libgcc_s.so.1, libgcc_s.so.1(GCC_3.0), libstdc++.so.6, libstdc++.so.6(GLIBCXX_3.4), libstdc++.so.6(CXXABI_1.3)" >> "/tmp/$PKG_NAME.spec"
+fi
+
+echo "
 %description
 $(grep '^\( \|Description:\)' /tmp/DEBIAN/control | sed -e 's/^\(Description:\)\? *//' -e 's/^\.$//' -e '/^Homepage/d')
 
 %files
-/*
+/etc/$BASE_NAME
+/etc/cron.daily/*
+/etc/ld.so.conf.d/*
+/opt/*
+/usr/bin/*
+/usr/share/bash-completion/completions/*
+/usr/share/doc/*
+/usr/share/man/*/*
 
 %changelog
 $(gunzip -c "$PKG_DIR/usr/share/doc/$PKG_NAME/changelog.gz" \
@@ -135,15 +151,29 @@ else
         groupdel bitdefender 2>/dev/null || true
     fi
 fi
-" > "/tmp/$PKG_NAME.spec"
+" >> "/tmp/$PKG_NAME.spec"
 
 
 NEWEST_FILE="$BASE_DIR/var/bdscan.inf"
 find "$PKG_DIR" -newer "$NEWEST_FILE" -exec touch -hr "$NEWEST_FILE" "{}" \;
 
-# sign ???
-rpmbuild -bb --buildroot "$PKG_DIR" --nodeps --target "$ARCH-pc-linux" -D "%_target_platform $ARCH-pc-linux" "/tmp/$PKG_NAME.spec"
-mv ~/rpmbuild/RPMS/*/*.rpm "${OUT_FILE%/*}/"
-rpm -qpi --provides -R --changelog --filetriggers --scripts -lv "$OUT_FILE" > "$OUT_FILE.txt"
+# sign RPM package
+GPG_FILE="${ZIP_FILE%/*}/rpm-gpg-dsa.tgz"
+if [ -f "$GPG_FILE" ]; then
+    tar -xzf "$GPG_FILE" -C ~/
+    gpg2 --batch --import ~/RPM-GPG-KEY*
+else
+    gpg2 --batch --passphrase '' --quick-generate-key "$PKG_OWNER" dsa1024 default 0
+
+    gpg2 --export-secret-keys -a "$PKG_OWNER" > ~/RPM-GPG-KEY-bitdefender.asc
+    gpg2 --export -a "$PKG_OWNER" > ~/RPM-GPG-KEY-bitdefender
+    tar -czf "$GPG_FILE" -C ~/ RPM-GPG-KEY*
+fi
+#rpm --import ~/RPM-GPG-KEY*.pub
+
+rpmbuild -bb --buildroot "$PKG_DIR" --nodeps --target "$ARCH-pc-linux" -D"%_target_platform $ARCH-pc-linux" "/tmp/$PKG_NAME.spec"
+mv ~/rpmbuild/RPMS/$ARCH/*.rpm "${OUT_FILE%/*}/"
+rpmsign --addsign -D'%_signature gpg' -D'%_gpgbin /usr/bin/gpg2' -D"%_gpg_path $HOME/.gnupg" -D"%_gpg_name ${PKG_OWNER% <*}" "$OUT_FILE"
+rpm -qpi --provides -R --changelog --filetriggers --scripts -lv "$OUT_FILE" > "$OUT_FILE.txt" 2>&1
 
 rm -rf "$PKG_DIR" ~/rpmbuild /tmp/*
