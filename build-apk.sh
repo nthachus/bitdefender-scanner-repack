@@ -41,6 +41,7 @@ ln -sf "$INST_DIR/var/lib/scan" "$PKG_DIR/usr/local/lib/bdscan"
 # APK files
 mv "$PKG_DIR/DEBIAN" /tmp/
 PKG_SIZE=`du -sk "$PKG_DIR" | sed 's/[^0-9].*//'`
+PKG_OWNER="`grep '^Maintainer:' /tmp/DEBIAN/control | sed 's/^Maintainer: *//'`"
 
 echo "pkgname = $PKG_NAME
 pkgver = ${PKG_VER}-repack
@@ -48,7 +49,7 @@ $(grep '^Description:' /tmp/DEBIAN/control | sed 's/^Description:/pkgdesc =/')
 $(grep '^ \?Homepage:' /tmp/DEBIAN/control | sed 's/^ \?Homepage:/url =/')
 arch = $ARCH
 origin = ${PKG_NAME%-*}
-$(grep '^Maintainer:' /tmp/DEBIAN/control | sed 's/^Maintainer:/maintainer =/')
+maintainer = $PKG_OWNER
 license = SC. BitDefender SRL.
 builddate = $(date +%s)
 size = $((PKG_SIZE * 1024))
@@ -117,10 +118,10 @@ find "$PKG_DIR" -newer "$NEWEST_FILE" -exec touch -hr "$NEWEST_FILE" "{}" \;
 # build package
 RSA_FILE="${ZIP_FILE%/*}/abuild-rsa.tgz"
 if [ -f "$RSA_FILE" ]; then
-    tar -xzf "$RSA_FILE" -C /root/
+    tar -xzf "$RSA_FILE" -C ~/
 else
-    echo '/root/.abuild/nthachus.github.com-4a6a0840.rsa' | abuild-keygen -a
-    tar -czf "$RSA_FILE" -C /root/ .abuild/
+    PACKAGER="$PKG_OWNER" abuild-keygen -an
+    tar -czf "$RSA_FILE" -C ~/ .abuild/
 fi
 
 ( cd "$PKG_DIR" && tar --xattrs -cf- * ) | abuild-tar --hash | gzip -9 > /tmp/data.tar.gz
