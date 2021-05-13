@@ -16,5 +16,6 @@ pgrep -f '/bin/bdscan'
 
 apk del bitdefender-scanner
 verify_pkg_removed
+test -d /usr/local/lib
 
 rm -rf /var/cache/apk/* /tmp/*

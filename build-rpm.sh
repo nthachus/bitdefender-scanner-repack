@@ -55,15 +55,17 @@ Packager: $PKG_OWNER
 Group: Applications/System
 #Requires: glibc > 2.3.6, libgcc > 4.1.1, libstdc++ > 4.1.1
 Requires: /sbin/ldconfig
-Provides: bdscan = $PKG_VER" > "/tmp/$PKG_NAME.spec"
+Provides: /usr/bin/bdscan" > "/tmp/$PKG_NAME.spec"
 
 if [ $ARCH = x86_64 ]; then
-    echo "Requires: libc.so.6()(64bit), libc.so.6(GLIBC_2.2.5)(64bit), libc.so.6(GLIBC_2.3)(64bit), libc.so.6(GLIBC_2.3.4)(64bit)
+    echo "Provides: bdupd.so()(64bit), bdcore.so()(64bit)
+Requires: libc.so.6()(64bit), libc.so.6(GLIBC_2.2.5)(64bit), libc.so.6(GLIBC_2.3)(64bit), libc.so.6(GLIBC_2.3.4)(64bit)
 Requires: libdl.so.2()(64bit), libdl.so.2(GLIBC_2.2.5)(64bit), libm.so.6()(64bit), libm.so.6(GLIBC_2.2.5)(64bit), libpthread.so.0()(64bit), libpthread.so.0(GLIBC_2.2.5)(64bit)
 Requires: libgcc_s.so.1()(64bit), libgcc_s.so.1(GCC_3.0)(64bit)
 Requires: libstdc++.so.6()(64bit), libstdc++.so.6(GLIBCXX_3.4)(64bit), libstdc++.so.6(CXXABI_1.3)(64bit)" >> "/tmp/$PKG_NAME.spec"
 else
-    echo "Requires: libc.so.6, libc.so.6(GLIBC_2.0), libc.so.6(GLIBC_2.1), libc.so.6(GLIBC_2.1.2), libc.so.6(GLIBC_2.2), libc.so.6(GLIBC_2.2.3), libc.so.6(GLIBC_2.3), libc.so.6(GLIBC_2.3.4)
+    echo "Provides: bdupd.so, bdcore.so
+Requires: libc.so.6, libc.so.6(GLIBC_2.0), libc.so.6(GLIBC_2.1), libc.so.6(GLIBC_2.1.2), libc.so.6(GLIBC_2.2), libc.so.6(GLIBC_2.2.3), libc.so.6(GLIBC_2.3), libc.so.6(GLIBC_2.3.4)
 Requires: libdl.so.2, libdl.so.2(GLIBC_2.0), libdl.so.2(GLIBC_2.1), libm.so.6, libm.so.6(GLIBC_2.1)
 Requires: libpthread.so.0, libpthread.so.0(GLIBC_2.0), libpthread.so.0(GLIBC_2.1), libpthread.so.0(GLIBC_2.2)
 Requires: libgcc_s.so.1, libgcc_s.so.1(GCC_3.0), libstdc++.so.6, libstdc++.so.6(GLIBCXX_3.4), libstdc++.so.6(CXXABI_1.3)" >> "/tmp/$PKG_NAME.spec"
@@ -74,14 +76,17 @@ echo "
 $(grep '^\( \|Description:\)' /tmp/DEBIAN/control | sed -e 's/^\(Description:\)\? *//' -e 's/^\.$//' -e '/^Homepage/d')
 
 %files
-/etc/$BASE_NAME
-/etc/cron.daily/*
-/etc/ld.so.conf.d/*
+%config %{_sysconfdir}/$BASE_NAME
+%{_sysconfdir}/cron.daily/*
+%{_sysconfdir}/ld.so.conf.d/*
 /opt/*
-/usr/bin/*
-/usr/share/bash-completion/completions/*
-/usr/share/doc/*
-/usr/share/man/*/*
+%config /opt/$BASE_NAME/etc/*.conf
+%{_bindir}/*
+%{_datadir}/bash-completion/completions/*
+%doc %{_docdir}/*
+%docdir %{_docdir}/%{name}
+%{_mandir}/*/*
+%docdir %{_mandir}/man?
 
 %changelog
 $(gunzip -c "$PKG_DIR/usr/share/doc/$PKG_NAME/changelog.gz" \
